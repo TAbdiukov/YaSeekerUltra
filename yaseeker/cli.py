@@ -227,9 +227,17 @@ async def main():
 
 
 def run():
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
-
+    # Python 3.14+: asyncio.get_event_loop() raises if no loop is set.
+    # asyncio.run() is the recommended high-level entrypoint.
+    if sys.version_info >= (3, 7):
+        asyncio.run(main())
+    else:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(main())
+        finally:
+            loop.close()
 
 if __name__ == "__main__":
     run()

@@ -17,7 +17,7 @@ setup(
     url="https://github.com/soxoj/YaSeekerUltra",
     author="Soxoj",
     author_email="soxoj@protonmail.com",
-    entry_points={'console_scripts': ['yaseeker = yaseeker.__init__:run']},
+    entry_points={'console_scripts': ['yaseeker = yaseeker.cli:run']},
     license="MIT",
     packages=find_packages(),
     include_package_data=True,
