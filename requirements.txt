@@ -1,1 +1,3 @@
 socid-extractor>=0.0.8
+termcolor
+tqdm
