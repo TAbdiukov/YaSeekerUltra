@@ -8,6 +8,7 @@
 - Add missing requirements to `requirements.txt`
 - Fix flimsy packaging entrypoint
 - Misc: Create changelog
+- Misc: Update User-Agent
 - Bump version
 
 ## 0.0.3
