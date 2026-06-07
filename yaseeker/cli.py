@@ -208,10 +208,25 @@ async def main():
 
     output_data = await processor.process(input_data)
 
+    auxiliary_report_messages = []
+    for output in output_data:
+        session_dir = getattr(output, 'session_dir', '')
+        if not session_dir:
+            continue
+
+        auxiliary_report_messages.append(
+            TXTOutput([output], filename=os.path.join(session_dir, 'auxiliary_report.txt')).put()
+        )
+        auxiliary_report_messages.append(
+            CSVOutput([output], filename=os.path.join(session_dir, 'auxiliary_report.csv')).put()
+        )
+
     # console output
     if not args.silent:
         r = PlainOutput(output_data, colored=not args.no_color)
         print(r.put())
+        if auxiliary_report_messages:
+            print('\n'.join(auxiliary_report_messages))
 
     # save CSV report
     if args.csv_filename:

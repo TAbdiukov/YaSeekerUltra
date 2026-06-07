@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1
+
+- Fix stale `run.py` wrapper to delegate to the package CLI entrypoint.
+- Make zero-lead results explicit in console, TXT, and CSV reports
+- Save auxiliary TXT and CSV evidence reports inside each session folder
+- Show the full per-session reports path in output
+
 ## 0.1.0
 
 - Fix Cookie handling

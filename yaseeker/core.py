@@ -21,7 +21,7 @@ HEADERS = {
 }
 
 COOKIES_FILENAME = 'cookies.txt'
-RESPONSES_DIRNAME = 'responses'
+REPORTS_DIRNAME = 'reports'
 SESSION_TIMESTAMP_FORMAT = '%Y%m%dT%H%M%SZ'
 
 
@@ -419,9 +419,10 @@ class OutputData:
 
 
 class OutputDataList:
-    def __init__(self, input_data: InputData, results: List[OutputData]):
+    def __init__(self, input_data: InputData, results: List[OutputData], session_dir: str = ''):
         self.input_data = input_data
         self.results = results
+        self.session_dir = session_dir
 
     def __repr__(self):
         return f'Target {self.input_data}:\n' + '--------\n'.join(map(str, self.results))
@@ -458,7 +459,7 @@ class Processor:
         data = []
         result = None
         error = None
-        session_recorder = SessionRecorder(RESPONSES_DIRNAME, input_data.value)
+        session_recorder = SessionRecorder(REPORTS_DIRNAME, input_data.value)
         progress = None
 
         if not self.no_progressbar:
@@ -494,7 +495,11 @@ class Processor:
             if progress is not None:
                 progress.close()
 
-        results = OutputDataList(input_data, data)
+        results = OutputDataList(
+            input_data,
+            data,
+            session_dir=str(session_recorder.session_dir.resolve()),
+        )
 
         return results
 

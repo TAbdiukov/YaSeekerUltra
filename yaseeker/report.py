@@ -88,9 +88,16 @@ class PlainOutput(Output):
             i = o.input_data
 
             text += f'Target: {self.colored(str(i), "green")}\n'
-            text += f'Results found: {len(o.results)}\n'
+            session_dir = getattr(o, 'session_dir', '')
+            if session_dir:
+                text += f'Reports session: {session_dir}\n'
 
-            for n, r in enumerate(o.results):
+            lead_results = [r for r in o.results if _result_has_returned_data(r)]
+            text += f'Leads found: {len(lead_results)}\n'
+            if not lead_results:
+                text += 'No leads found.\n'
+
+            for n, r in enumerate(lead_results):
                 text += f'{n+1}) '
                 total += 1
 
@@ -106,7 +113,7 @@ class PlainOutput(Output):
 
             text += '-'*30 + '\n'
 
-        text += f'Total found: {total}\n'
+        text += f'Total leads found: {total}\n'
 
         # After the summary, show request URL + request type (GET/POST) per entry.
         req_lines: List[Tuple[str, str, str]] = []
@@ -171,17 +178,19 @@ class CSVOutput(Output):
         super().__init__(*args, **kwargs)
 
     def put(self):
-        if not len(self.data) and not len(self.data[0].results):
+        if not len(self.data):
             return ''
 
         fields = []
         for f in self.data:
             for r in f.results:
+                if not _result_has_returned_data(r):
+                    continue
                 fields += r.fields
 
         fields = list(set(fields))
 
-        fieldnames = ['Target'] + [k.title().replace('_', ' ') for k in fields]
+        fieldnames = ['Target', 'Reports Session', 'Leads Found'] + [k.title().replace('_', ' ') for k in fields]
 
         with open(self.filename, 'w') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
@@ -189,9 +198,23 @@ class CSVOutput(Output):
 
             for o in self.data:
                 i = o.input_data
-                row = {'Target': i}
+                session_dir = getattr(o, 'session_dir', '')
+                lead_results = [r for r in o.results if _result_has_returned_data(r)]
 
-                for r in o.results:
+                if not lead_results:
+                    writer.writerow({
+                        'Target': i,
+                        'Reports Session': session_dir,
+                        'Leads Found': 'No',
+                    })
+                    continue
+
+                for r in lead_results:
+                    row = {
+                        'Target': i,
+                        'Reports Session': session_dir,
+                        'Leads Found': 'Yes',
+                    }
                     for k in fields:
                         key = k.title().replace('_', ' ')
                         val = r.__dict__.get(k)
