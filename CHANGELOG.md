@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.0
+
+- Fix Cookie handling
+
 ## 0.0.8
 
 - Add per-input UTC-timestamped response sessions

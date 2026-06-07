@@ -26,15 +26,9 @@ SESSION_TIMESTAMP_FORMAT = '%Y%m%dT%H%M%SZ'
 
 
 def load_cookies(filename):
-    cookies = {}
+    cookies = MozillaCookieJar(filename)
     if os.path.exists(filename):
-        cookies_obj = MozillaCookieJar(filename)
-        cookies_obj.load(ignore_discard=False, ignore_expires=False)
-
-        for domain in cookies_obj._cookies.values():
-            for cookie_dict in list(domain.values()):
-                for _, cookie in cookie_dict.items():
-                    cookies[cookie.name] = cookie.value
+        cookies.load(ignore_discard=False, ignore_expires=False)
 
     return cookies
 
@@ -451,7 +445,8 @@ class Processor:
         self.no_progressbar = kwargs.get('no_progressbar', False)
 
         # yandex setup
-        self.cookies = load_cookies(COOKIES_FILENAME)
+        cookie_file = kwargs.get('cookie_file') or COOKIES_FILENAME
+        self.cookies = load_cookies(cookie_file)
         if not self.cookies:
             print(f'Cookies not found, but are required for some sites. See README to learn how to use cookies.')
 

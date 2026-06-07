@@ -203,6 +203,7 @@ async def main():
     processor = Processor(
         no_progressbar=args.no_progressbar,
         proxy=args.proxy,
+        cookie_file=args.cookie_file,
     )
 
     output_data = await processor.process(input_data)
