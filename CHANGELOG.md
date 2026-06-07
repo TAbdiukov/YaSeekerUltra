@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.0.4 (upcoming)
+## 0.0.4
 
 - Fixes to asyncio usage for Python 3.14 (Python 3.8 or higher), while maintaining backwards compatibility.
 - Fix relative import in `__main__.py`

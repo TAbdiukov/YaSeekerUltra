@@ -131,3 +131,5 @@ dmypy.json
 # repo specific
 listdump.md
 cookies.txt
+_meta_*
+*.patch
