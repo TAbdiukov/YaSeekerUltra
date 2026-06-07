@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.8
+
+- Add per-input UTC-timestamped response sessions
+- Save all attempted HTTP responses to session folders
+- Embed response headers in saved HTML output where possible
+- Save non-HTML responses as raw header-plus-body files
+- Track progress by attempted URL hits per session
+
 ## 0.0.4
 
 - Fixes to asyncio usage for Python 3.14 (Python 3.8 or higher), while maintaining backwards compatibility.
