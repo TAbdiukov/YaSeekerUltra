@@ -29,59 +29,34 @@ Python 3.6+ and pip are required.
 ## Usage
 
 ```bash
-$ python3 ya_seeker.py login  # only for usernames
-# or 
-$ python3 ya_seeker.py c48fhxw0qppa50289r5c9ku4k4 yandex_public_id
-# identifier can have one of these types: username, yandex_public_id, id, yandex_messenger_guid
+$ python3 run.py login
+# or
+$ yaseeker login
 ```
+
+YaSeeker now performs deep artifact pivots automatically. If one artifact reveals another queryable artifact (for example a username reveals a Yandex public ID, which then reveals a messenger GUID), the new artifact is queued and queried in the same run. Console output starts with a color-coded artifact tracker and then prints the full per-platform results at the end.
 
 ## Example
 
 ```bash
-$ python3 ya_seeker.py login
-[*] Get info by username `login`...
+$ yaseeker login
+Target: login (username)
+Artifacts discovered: 3
+Artifacts:
+  1) seed queried depth=0 username: login
+  2) auto queried depth=1 yandex_public_id: c48fhxw0qppa50289r5c9ku4k4
+      via username: login -> Collections Api.yandex_public_id
+  3) auto queried depth=2 yandex_messenger_guid: 00000000-0000-0000-0000-000000000000
+      via yandex_public_id: c48fhxw0qppa50289r5c9ku4k4 -> Messenger.yandex_messenger_guid
 
-[+] Yandex.Collections
-	URL: https://yandex.ru/collections/user/login/
-	Yandex_public_id: c48fhxw0qppa50289r5c9ku4k4
-	Fullname: haxxor elite
-	Image: https://avatars.mds.yandex.net/get-yapic/24700/enc-0f504b0d68d5f6fb0d336e2157b44e88ef2225aff6a621016f4dccad990b5d3e/islands-200
-	Likes: 0
-	Cards: 0
-	Boards: 0
-	Is_passport: True
-	Is_restricted: False
-	Is_forbid: False
-	Is_km: False
-	Is_business: False
-
-[+] Yandex.Music
-	URL: https://music.yandex.ru/users/login/playlists
-	Yandex_uid: 266797119
-	Username: login
-...
-
-$ python3 ya_seeker.py c48fhxw0qppa50289r5c9ku4k4 yandex_public_id
-[*] Get info by yandex_public_id `c48fhxw0qppa50289r5c9ku4k4`...
-
-[+] Yandex.Collections API
-	URL: https://yandex.ru/collections/user/c48fhxw0qppa50289r5c9ku4k4/
-	Yandex_public_id: c48fhxw0qppa50289r5c9ku4k4
-	Fullname: haxxor elite
-	Image: https://avatars.mds.yandex.net/get-yapic/24700/enc-0f504b0d68d5f6fb0d336e2157b44e88ef2225aff6a621016f4dccad990b5d3e/islands-200
-	Likes: 0
-	Cards: 0
-	Boards: 0
-	Is_passport: True
-	Is_restricted: False
-	Is_forbid: False
-	Is_km: False
-	Is_business: False
-
-[+] Yandex.Reviews
-	URL: https://reviews.yandex.ru/user/c48fhxw0qppa50289r5c9ku4k4
-	Yandex_public_id: c48fhxw0qppa50289r5c9ku4k4
-...
+Detailed results:
+1) username: login
+   Platforms with data: 4/5
+   1) Collections Api [found]
+      URL: https://yandex.ru/collections/user/login/
+      Yandex Public Id: c48fhxw0qppa50289r5c9ku4k4
+      Fullname: haxxor elite
+      ...
 ```
 
 ## Cookies

@@ -7,6 +7,8 @@
 - Add URLs and request-method information to the final summary
 - Add missing requirements to `requirements.txt`
 - Fix flimsy packaging entrypoint
+- Add automatic deep artifact pivoting to the module, with typed artifact tracking and a final full-results report
+- Add color-coded artifact inventory to console output
 - Misc: Create changelog
 - Misc: Update User-Agent
 - Bump version

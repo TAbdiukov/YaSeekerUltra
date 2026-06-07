@@ -182,18 +182,20 @@ async def main():
         if not os.path.exists(args.target_list_filename):
             print(f'There is no file {args.target_list_filename}')
         else:
-            with open(args.target_list_filename) as f:
-                input_data = [InputData(t) for t in f.read().splitlines()]
+            with open(args.target_list_filename, encoding='utf-8') as f:
+                input_data = [InputData(t) for t in f.read().splitlines() if t.strip()]
 
     # or read from stdin
     # e.g. cat list.txt | ./run.py --targets-from-stdin
     elif args.target_list_stdin:
         for line in sys.stdin:
-            input_data.append(InputData(line.strip()))
+            line = line.strip()
+            if line:
+                input_data.append(InputData(line))
 
     # or read from arguments
     elif args.target:
-        input_data = [InputData(t) for t in args.target]
+        input_data = [InputData(t) for t in args.target if t.strip()]
 
     if not input_data:
         print('There are no targets to check!')
@@ -203,6 +205,8 @@ async def main():
     processor = Processor(
         no_progressbar=args.no_progressbar,
         proxy=args.proxy,
+        timeout=int(args.timeout),
+        cookie_file=args.cookie_file,
     )
 
     output_data = await processor.process(input_data)
@@ -218,7 +222,6 @@ async def main():
         print(r.put())
 
     # save TXT report
-
     if args.txt_filename:
         r = TXTOutput(output_data, filename=args.txt_filename)
         print(r.put())
@@ -238,6 +241,7 @@ def run():
             loop.run_until_complete(main())
         finally:
             loop.close()
+
 
 if __name__ == "__main__":
     run()

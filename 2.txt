@@ -1,0 +1,732 @@
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000..d651974
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,133 @@
++# Byte-compiled / optimized / DLL files
++__pycache__/
++*.py[cod]
++*$py.class
++
++# C extensions
++*.so
++
++# Distribution / packaging
++.Python
++build/
++develop-eggs/
++dist/
++downloads/
++eggs/
++.eggs/
++lib/
++lib64/
++parts/
++sdist/
++var/
++wheels/
++pip-wheel-metadata/
++share/python-wheels/
++*.egg-info/
++.installed.cfg
++*.egg
++MANIFEST
++
++# PyInstaller
++#  Usually these files are written by a python script from a template
++#  before PyInstaller builds the exe, so as to inject date/other infos into it.
++*.manifest
++*.spec
++
++# Installer logs
++pip-log.txt
++pip-delete-this-directory.txt
++
++# Unit test / coverage reports
++htmlcov/
++.tox/
++.nox/
++.coverage
++.coverage.*
++.cache
++nosetests.xml
++coverage.xml
++*.cover
++*.py,cover
++.hypothesis/
++.pytest_cache/
++
++# Translations
++*.mo
++*.pot
++
++# Django stuff:
++*.log
++local_settings.py
++db.sqlite3
++db.sqlite3-journal
++
++# Flask stuff:
++instance/
++.webassets-cache
++
++# Scrapy stuff:
++.scrapy
++
++# Sphinx documentation
++docs/_build/
++
++# PyBuilder
++target/
++
++# Jupyter Notebook
++.ipynb_checkpoints
++
++# IPython
++profile_default/
++ipython_config.py
++
++# pyenv
++.python-version
++
++# pipenv
++#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
++#   However, in case of collaboration, if having platform-specific dependencies or dependencies
++#   having no cross-platform support, pipenv may install dependencies that don't work, or not
++#   install all needed dependencies.
++#Pipfile.lock
++
++# PEP 582; used by e.g. github.com/David-OConnor/pyflow
++__pypackages__/
++
++# Celery stuff
++celerybeat-schedule
++celerybeat.pid
++
++# SageMath parsed files
++*.sage.py
++
++# Environments
++.env
++.venv
++env/
++venv/
++ENV/
++env.bak/
++venv.bak/
++
++# Spyder project settings
++.spyderproject
++.spyproject
++
++# Rope project settings
++.ropeproject
++
++# mkdocs documentation
++/site
++
++# mypy
++.mypy_cache/
++.dmypy.json
++dmypy.json
++
++# Pyre type checker
++.pyre/
++
++# repo specific
++listdump.md
++cookies.txt
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+new file mode 100644
+index 0000000..d1d5303
+--- /dev/null
++++ b/CHANGELOG.md
+@@ -0,0 +1,16 @@
++# Changelog
++
++## 0.0.4 (upcoming)
++
++- Fixes to asyncio usage for Python 3.14 (Python 3.8 or higher), while maintaining backwards compatibility.
++- Fix relative import in `__main__.py`
++- Add URLs and request-method information to the final summary
++- Add missing requirements to `requirements.txt`
++- Fix flimsy packaging entrypoint
++- Misc: Create changelog
++- Misc: Update User-Agent
++- Bump version
++
++## 0.0.3
++
++- ...
+diff --git a/README.md b/README.md
+index b187e16..0ffdcec 100644
+--- a/README.md
++++ b/README.md
+@@ -28,6 +28,15 @@ Python 3.6+ and pip are required.
+ 
+ ## Usage
+ 
++```bash
++$ python3 ya_seeker.py login  # only for usernames
++# or 
++$ python3 ya_seeker.py c48fhxw0qppa50289r5c9ku4k4 yandex_public_id
++# identifier can have one of these types: username, yandex_public_id, id, yandex_messenger_guid
++```
++
++## Example
++
+ ```bash
+ $ python3 ya_seeker.py login
+ [*] Get info by username `login`...
+diff --git a/requirements.txt b/requirements.txt
+index 97791d4..b40ac8f 100644
+--- a/requirements.txt
++++ b/requirements.txt
+@@ -1 +1,4 @@
+ socid-extractor>=0.0.8
++termcolor
++tqdm
++aiohttp-socks>=0.11.0
+diff --git a/run.py b/run.py
+new file mode 100755
+index 0000000..c9991b8
+--- /dev/null
++++ b/run.py
+@@ -0,0 +1,13 @@
++#! /usr/bin/env python3
++from yaseeker import cli
++
++def run():
++    if sys.version_info >= (3, 7):
++        asyncio.run(main())
++    else:
++        loop = asyncio.new_event_loop()
++        asyncio.set_event_loop(loop)
++        try:
++            loop.run_until_complete(main())
++        finally:
++            loop.close()
+diff --git a/setup.py b/setup.py
+new file mode 100644
+index 0000000..adc92e0
+--- /dev/null
++++ b/setup.py
+@@ -0,0 +1,25 @@
++from setuptools import setup, find_packages
++
++exec(open('yaseeker/_version.py').read())
++
++with open('requirements.txt') as rf:
++    requires = rf.read().splitlines()
++
++with open('README.md') as fh:
++    long_description = fh.read()
++
++setup(
++    name="yaseeker",
++    version=__version__,
++    description="Yandex profile seeker took",
++    long_description=long_description,
++    long_description_content_type="text/markdown",
++    url="https://github.com/soxoj/YaSeekerUltra",
++    author="Soxoj",
++    author_email="soxoj@protonmail.com",
++    entry_points={'console_scripts': ['yaseeker = yaseeker.cli:run']},
++    license="MIT",
++    packages=find_packages(),
++    include_package_data=True,
++    install_requires=requires,
++)
+diff --git a/ya_seeker.py b/ya_seeker.py
+index cc9cc5c..36a5958 100755
+--- a/ya_seeker.py
++++ b/ya_seeker.py
+@@ -8,7 +8,7 @@ import requests
+ from socid_extractor import extract
+ 
+ HEADERS = {
+-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36',
++    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36',
+ }
+ 
+ COOKIES_FILENAME = 'cookies.txt'
+diff --git a/yaseeker/__main__.py b/yaseeker/__main__.py
+new file mode 100644
+index 0000000..3a21dda
+--- /dev/null
++++ b/yaseeker/__main__.py
+@@ -0,0 +1,8 @@
++#! /usr/bin/env python3
++"""
++Entrypoint
++"""
++from .cli import run
++
++if __name__ == "__main__":
++    run()
+diff --git a/yaseeker/_version.py b/yaseeker/_version.py
+new file mode 100644
+index 0000000..156d6f9
+--- /dev/null
++++ b/yaseeker/_version.py
+@@ -0,0 +1 @@
++__version__ = '0.0.4'
+diff --git a/yaseeker/cli.py b/yaseeker/cli.py
+new file mode 100644
+index 0000000..912c066
+--- /dev/null
++++ b/yaseeker/cli.py
+@@ -0,0 +1,243 @@
++"""
++Commandline interface
++"""
++import asyncio
++import logging
++import os
++import platform
++import sys
++
++from argparse import ArgumentParser, RawDescriptionHelpFormatter
++
++from .core import *
++from .report import *
++
++
++def setup_arguments_parser():
++    from aiohttp import __version__ as aiohttp_version
++    from ._version import __version__
++
++    version_string = '\n'.join(
++        [
++            f'%(prog)s {__version__}',
++            f'Python:  {platform.python_version()}',
++            f'Aiohttp:  {aiohttp_version}',
++        ]
++    )
++
++    parser = ArgumentParser(
++        formatter_class=RawDescriptionHelpFormatter,
++        description=f"OSINT tool v{__version__}\n"
++    )
++    target_group = parser.add_argument_group(
++        'INPUT', 'Options for input data'
++    )
++    target_group.add_argument(
++        "target",
++        nargs='*',
++        metavar="TARGET",
++        help="One or more target to get info by.",
++    )
++    target_group.add_argument(
++        "--target-list",
++        action="store",
++        dest="target_list_filename",
++        default='',
++        help="Path to text file with list of targets.",
++    )
++    target_group.add_argument(
++        "--targets-from-stdin",
++        action="store_true",
++        dest="target_list_stdin",
++        default=False,
++        help="Read all the lines from standard input.",
++    )
++    out_group = parser.add_argument_group(
++        'OUTPUT', 'Options for output reports'
++    )
++    out_group.add_argument(
++        "--csv-report",
++        "-oC",
++        action="store",
++        dest="csv_filename",
++        default='',
++        help="Path to file for saving CSV report.",
++    )
++    out_group.add_argument(
++        "--text-report",
++        "-oT",
++        action="store",
++        dest="txt_filename",
++        default='',
++        help="Path to file for saving TXT report (grepable console output).",
++    )
++    parser.add_argument(
++        "--version",
++        action="version",
++        version=version_string,
++        help="Display version information and dependencies.",
++    )
++    parser.add_argument(
++        "--timeout",
++        action="store",
++        metavar='TIMEOUT',
++        dest="timeout",
++        default=100,
++        help="Time in seconds to wait for execution.",
++    )
++    parser.add_argument(
++        "--cookie-jar-file",
++        metavar="COOKIE_FILE",
++        dest="cookie_file",
++        default='',
++        help="File with cookies.",
++    )
++    parser.add_argument(
++        "--proxy",
++        "-p",
++        metavar='PROXY_URL',
++        action="store",
++        dest="proxy",
++        default='',
++        help="Make requests over a proxy. e.g. socks5://127.0.0.1:1080",
++    )
++    parser.add_argument(
++        "--verbose",
++        "-v",
++        action="store_true",
++        dest="verbose",
++        default=False,
++        help="Display extra information and metrics.",
++    )
++    parser.add_argument(
++        "--silent",
++        "-s",
++        action="store_true",
++        dest="silent",
++        default=False,
++        help="Suppress console output.",
++    )
++    parser.add_argument(
++        "--info",
++        "-vv",
++        action="store_true",
++        dest="info",
++        default=False,
++        help="Display extra/service information and metrics.",
++    )
++    parser.add_argument(
++        "--debug",
++        "-vvv",
++        "-d",
++        action="store_true",
++        dest="debug",
++        default=False,
++        help="Display extra/service/debug information and metrics, save responses in debug.log.",
++    )
++    parser.add_argument(
++        "--no-color",
++        action="store_true",
++        dest="no_color",
++        default=False,
++        help="Don't color terminal output",
++    )
++    parser.add_argument(
++        "--no-progressbar",
++        action="store_true",
++        dest="no_progressbar",
++        default=False,
++        help="Don't show progressbar.",
++    )
++
++    return parser
++
++
++async def main():
++    # Logging
++    log_level = logging.ERROR
++    logging.basicConfig(
++        format='[%(filename)s:%(lineno)d] %(levelname)-3s  %(asctime)s %(message)s',
++        datefmt='%H:%M:%S',
++        level=log_level,
++    )
++    logger = logging.getLogger('osint-cli-tool-skeleton')
++    logger.setLevel(log_level)
++
++    arg_parser = setup_arguments_parser()
++    args = arg_parser.parse_args()
++
++    if args.debug:
++        log_level = logging.DEBUG
++    elif args.info:
++        log_level = logging.INFO
++    elif args.verbose:
++        log_level = logging.WARNING
++
++    logger.setLevel(log_level)
++
++    input_data = []
++
++    # read from file
++    if args.target_list_filename:
++        if not os.path.exists(args.target_list_filename):
++            print(f'There is no file {args.target_list_filename}')
++        else:
++            with open(args.target_list_filename) as f:
++                input_data = [InputData(t) for t in f.read().splitlines()]
++
++    # or read from stdin
++    # e.g. cat list.txt | ./run.py --targets-from-stdin
++    elif args.target_list_stdin:
++        for line in sys.stdin:
++            input_data.append(InputData(line.strip()))
++
++    # or read from arguments
++    elif args.target:
++        input_data = [InputData(t) for t in args.target]
++
++    if not input_data:
++        print('There are no targets to check!')
++        sys.exit(1)
++
++    # convert input to output
++    processor = Processor(
++        no_progressbar=args.no_progressbar,
++        proxy=args.proxy,
++    )
++
++    output_data = await processor.process(input_data)
++
++    # console output
++    if not args.silent:
++        r = PlainOutput(output_data, colored=not args.no_color)
++        print(r.put())
++
++    # save CSV report
++    if args.csv_filename:
++        r = CSVOutput(output_data, filename=args.csv_filename)
++        print(r.put())
++
++    # save TXT report
++
++    if args.txt_filename:
++        r = TXTOutput(output_data, filename=args.txt_filename)
++        print(r.put())
++
++    await processor.close()
++
++
++def run():
++    # Python 3.14+: asyncio.get_event_loop() raises if no loop is set.
++    # asyncio.run() is the recommended high-level entrypoint.
++    if sys.version_info >= (3, 7):
++        asyncio.run(main())
++    else:
++        loop = asyncio.new_event_loop()
++        asyncio.set_event_loop(loop)
++        try:
++            loop.run_until_complete(main())
++        finally:
++            loop.close()
++
++if __name__ == "__main__":
++    run()
+\ No newline at end of file
+diff --git a/yaseeker/report.py b/yaseeker/report.py
+new file mode 100644
+index 0000000..056cc12
+--- /dev/null
++++ b/yaseeker/report.py
+@@ -0,0 +1,202 @@
++from colorama import init
++import csv
++import termcolor
++from typing import Dict, List, Optional, Tuple
++
++from .core import OutputData, OutputDataList
++
++
++# use Colorama to make Termcolor work on Windows too
++init()
++
++# Platform -> (HTTP method, URL template).
++# NOTE: "{value}" will be replaced by the identifier printed in the entry.
++REQUEST_SPECS: Dict[str, Tuple[str, str]] = {
++    "collections api": ("GET",  "https://yandex.ru/collections/api/users/{value}"),
++    "music":           ("GET",  "https://music.yandex.ru/handlers/library.jsx?owner={value}"),
++    "bugbounty":       ("GET",  "https://yandex.ru/bugbounty/researchers/{value}/"),
++    "messenger search":("POST", "https://yandex.ru/messenger/api/registry/api/"),
++    "music api":       ("GET",  "https://api.music.yandex.net/users/{value}"),
++    "reviews":         ("GET",  "https://reviews.yandex.ru/user/{value}"),
++    "znatoki":         ("GET",  "https://yandex.ru/q/profile/{value}/"),
++    "zen":             ("GET",  "https://zen.yandex.ru/user/{value}"),
++    "market":          ("GET",  "https://market.yandex.ru/user/{value}/reviews"),
++    "o":               ("GET",  "http://o.yandex.ru/profile/{value}/"),
++    "kinopoisk":       ("GET",  "https://www.kinopoisk.ru/user/{value}/"),
++    "messenger":       ("POST", "https://yandex.ru/messenger/api/registry/api/"),
++}
++
++
++def _normalize_platform(name: str) -> str:
++    # "Collections Api" -> "collections api"
++    return " ".join((name or "").lower().split())
++
++
++def _platform_request(platform: str, value: str) -> Optional[Tuple[str, str]]:
++    spec = REQUEST_SPECS.get(_normalize_platform(platform))
++    if not spec:
++        return None
++    method, template = spec
++    return method, template.format(value=value)
++
++
++def _result_has_returned_data(r: OutputData) -> bool:
++    """
++    True only when this platform entry actually returned extracted data.
++    Entries that only have Value + Platform (and maybe error) are treated as "no data".
++    """
++    ignore = {"value", "platform", "error"}
++    for k, v in r.__dict__.items():
++        if k in ignore:
++            continue
++        if v is None:
++            continue
++        # empty string/container => no useful data
++        if isinstance(v, str) and not v.strip():
++            continue
++        if isinstance(v, (list, dict, set, tuple)) and len(v) == 0:
++            continue
++        return True
++    return False
++
++
++class Output:
++    def __init__(self, data: OutputDataList, *args, **kwargs):
++        self.data = data
++
++    def put(self):
++        pass
++
++
++class PlainOutput(Output):
++    def __init__(self, *args, **kwargs):
++        self.is_colored = kwargs.get('colored', True)
++        super().__init__(*args, **kwargs)
++
++    def colored(self, val, color):
++        if not self.is_colored:
++            return val
++
++        return termcolor.colored(val, color)
++
++    def put(self):
++        text = ''
++        total = 0
++        olist = self.data
++
++        for o in olist:
++            i = o.input_data
++
++            text += f'Target: {self.colored(str(i), "green")}\n'
++            text += f'Results found: {len(o.results)}\n'
++
++            for n, r in enumerate(o.results):
++                text += f'{n+1}) '
++                total += 1
++
++                for k in r.fields:
++                    key = k.title().replace('_', ' ')
++                    val = r.__dict__.get(k)
++                    if val is None:
++                        val = ''
++
++                    text += f'{self.colored(key, "yellow")}: {val}\n'
++
++                text += '\n'
++
++            text += '-'*30 + '\n'
++
++        text += f'Total found: {total}\n'
++
++        # After the summary, show request URL + request type (GET/POST) per entry.
++        req_lines: List[Tuple[str, str, str]] = []
++        seen = set()
++
++        for o in olist:
++            for r in o.results:
++                if not _result_has_returned_data(r):
++                    continue
++                platform = r.__dict__.get("platform", "") or ""
++
++                req = _platform_request(platform, r.value)
++                if req:
++                    method, url = req
++                else:
++                    # Fallback: if platform is unknown but we still have a URL in the extracted data.
++                    # We don't know the real method here; assume GET only for display purposes.
++                    url = (
++                        r.__dict__.get("URL_secondary")
++                        or r.__dict__.get("URL")
++                        or r.__dict__.get("url")
++                        or ""
++                    )
++                    method = "GET" if url else ""
++
++                if method and url:
++                    key = (platform, method, url)
++                    if key in seen:
++                        continue
++                    seen.add(key)
++                    req_lines.append(key)
++
++        if req_lines:
++            text += "\n" + self.colored("Requests:", "cyan") + "\n"
++            for platform, method, url in req_lines:
++                text += (
++                    f'{self.colored(platform, "yellow")}: '
++                    f'{self.colored(method, "magenta")} '
++                    f'{self.colored(url, "green")}\n'
++                )
++
++        return text
++
++
++class TXTOutput(PlainOutput):
++    def __init__(self, *args, **kwargs):
++        self.filename = kwargs.get('filename', 'report.txt')
++        super().__init__(*args, **kwargs)
++        self.is_colored = False
++
++    def put(self):
++        text = super().put()
++        with open(self.filename, 'w') as f:
++            f.write(text)
++
++        return f'Results were saved to file {self.filename}'
++
++
++class CSVOutput(Output):
++    def __init__(self, *args, **kwargs):
++        self.filename = kwargs.get('filename', 'report.csv')
++        super().__init__(*args, **kwargs)
++
++    def put(self):
++        if not len(self.data) and not len(self.data[0].results):
++            return ''
++
++        fields = []
++        for f in self.data:
++            for r in f.results:
++                fields += r.fields
++
++        fields = list(set(fields))
++
++        fieldnames = ['Target'] + [k.title().replace('_', ' ') for k in fields]
++
++        with open(self.filename, 'w') as csvfile:
++            writer = csv.DictWriter(csvfile, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
++            writer.writeheader()
++
++            for o in self.data:
++                i = o.input_data
++                row = {'Target': i}
++
++                for r in o.results:
++                    for k in fields:
++                        key = k.title().replace('_', ' ')
++                        val = r.__dict__.get(k)
++                        row[key] = val
++
++                    writer.writerow(row)
++
++        return f'Results were saved to file {self.filename}'

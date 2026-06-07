@@ -1,4 +1,7 @@
+aiohttp
 socid-extractor>=0.0.8
 termcolor
 tqdm
 aiohttp-socks>=0.11.0
+colorama
+requests
