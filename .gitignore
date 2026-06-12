@@ -133,5 +133,4 @@ listdump.md
 cookies.txt
 _meta_*
 *.patch
-responses*
-
+reports/*
