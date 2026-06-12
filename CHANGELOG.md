@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.1
+## 0.2.0
 
 - Implement a case system utilizing timestamps for reports
 - Fix stale `run.py` wrapper to delegate to the package CLI entrypoint.
