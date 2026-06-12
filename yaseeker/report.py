@@ -166,7 +166,7 @@ class TXTOutput(PlainOutput):
 
     def put(self):
         text = super().put()
-        with open(self.filename, 'w') as f:
+        with open(self.filename, 'w', encoding="utf-8") as f:
             f.write(text)
 
         return f'Results were saved to file {self.filename}'
@@ -192,7 +192,7 @@ class CSVOutput(Output):
 
         fieldnames = ['Target', 'Reports Session', 'Leads Found'] + [k.title().replace('_', ' ') for k in fields]
 
-        with open(self.filename, 'w') as csvfile:
+        with open(self.filename, 'w', encoding="utf-8") as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
             writer.writeheader()
 
