@@ -1,7 +1,7 @@
 socid-extractor>=0.0.8
 charset-normalizer>=2.0.0
-colorama
 termcolor
+colorama
 tqdm
 aiohttp-socks>=0.11.0
 pytest
