@@ -2,10 +2,13 @@
 
 ## 0.1.1
 
+- Implement a case system utilizing timestamps for reports
 - Fix stale `run.py` wrapper to delegate to the package CLI entrypoint.
 - Make zero-lead results explicit in console, TXT, and CSV reports
 - Save auxiliary TXT and CSV evidence reports inside each session folder
 - Show the full per-session reports path in output
+- Fix HTML metadata handling per encodings.
+- Implement test-driven CI/CD.
 
 ## 0.1.0
 
