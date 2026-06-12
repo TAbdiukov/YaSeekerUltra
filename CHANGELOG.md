@@ -4,6 +4,7 @@
 
 - High-level tests
 - Fix Unicode issue in file put()
+- Update README
 - Update .gitignore
 
 ## 0.2.0

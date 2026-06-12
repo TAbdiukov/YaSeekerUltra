@@ -98,6 +98,6 @@ This tool uses the following OSINT techniques:
 
 Some services are required cookies for API requests. Follow next steps to use your cookies for YaSeekerUltra:
 1. Login into Yandex through your browser.
-1. Install any extension to download all the Ya cookies in Netscape format aka cookies.txt  ([Chrome](https://chrome.google.com/webstore/detail/get-cookiestxt/bgaddhkoddajcdgocldbbfleckgcbcid), [Firefox](https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/)).
+1. Install any extension to download all the Ya cookies in Netscape format aka cookies.txt  ([Chrome](https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc), [Firefox](https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/)).
 1. Save it to the directory of YaSeekerUltra in file `cookies.txt`.
 1. Run script and enjoy!
