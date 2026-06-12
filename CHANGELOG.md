@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.3
+
+- Added ignore patterns for Yandex Market CMS and advertising avatar-like assets.
+- Fix typo
+- Update CDN-cached images
+
 ## 0.3.0
 
 - Fetch profile pictures safely and consistently
