@@ -1,7 +1,8 @@
 socid-extractor>=0.0.8
+aiohttp>=3.8.0
+requests>=2.0.0
 charset-normalizer>=2.0.0
 termcolor
 colorama
 tqdm
 aiohttp-socks>=0.11.0
-pytest

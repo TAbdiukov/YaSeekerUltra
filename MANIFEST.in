@@ -1,0 +1,12 @@
+include CHANGELOG.md
+include MANIFEST.in
+include NOTICE
+include PUBLISHING.md
+include README.md
+include requirements.txt
+include requirements-dev.txt
+include run.py
+recursive-include LICENSES *.txt
+recursive-include tests *.py
+global-exclude __pycache__
+global-exclude *.py[cod]
