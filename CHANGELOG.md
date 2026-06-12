@@ -2,7 +2,8 @@
 
 ## 0.3.0
 
-- Fetch profile pictures
+- Fetch profile pictures safely and consistently
+- Better cookie handling
 
 ## 0.2.1
 
