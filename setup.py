@@ -25,7 +25,7 @@ setup(
     include_package_data=True,
     install_requires=requires,
     python_requires=">=3.8",
-    license_files=["NOTICE", "LICENSES/MIT-Soxoj.txt"],
+    license_files=["NOTICE", "LICENCES/MIT-Soxoj.txt"],
     project_urls={
         "Source": "https://github.com/TAbdiukov/YaSINT",
         "Issues": "https://github.com/TAbdiukov/YaSINT/issues",

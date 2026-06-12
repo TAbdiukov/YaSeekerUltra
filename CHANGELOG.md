@@ -2,10 +2,10 @@
 
 ## 0.3.0
 
-- Add PyPI build metadata
-- Rename project
 - Fetch profile pictures safely and consistently
 - Better cookie handling
+- Add PyPI build metadata
+- Rename project
 - Update README
 - Sunset pictures/
 
