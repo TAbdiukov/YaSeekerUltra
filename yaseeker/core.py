@@ -68,6 +68,9 @@ AVATAR_URL_IGNORE_PATTERNS = (
     re.compile(r'/get-verba/', re.IGNORECASE),
 	re.compile(r'/get-vertis-journal/', re.IGNORECASE),
     re.compile(r'/get-ugc/', re.IGNORECASE),
+    # Yandex default / placeholder avatars
+    re.compile(r'/get-yapic/0/0-0(?:/|$)', re.IGNORECASE),
+    re.compile(r'/get-yapic/[1-9]\d*/0[a-z0-9]*-\d+(?:/|$)', re.IGNORECASE),
 	)
 AVATAR_URL_ATTRS = {
     'src',
