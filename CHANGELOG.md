@@ -26,6 +26,7 @@
 ## 0.1.0
 
 - Fix Cookie handling
+- Turn into a pip-installable package.
 
 ## 0.0.8
 
