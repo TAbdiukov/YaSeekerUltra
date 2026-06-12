@@ -93,6 +93,7 @@ def test_run_processes_positional_targets_and_closes_processor(monkeypatch, caps
     processor = fake_processor.instances[0]
     assert processor.kwargs == {
         'no_progressbar': True,
+        'no_color': True,
         'proxy': 'socks5://127.0.0.1:1080',
         'cookie_file': 'cookies.txt',
     }
