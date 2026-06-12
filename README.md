@@ -108,7 +108,7 @@ Some Yandex services require cookies before they return useful API responses.
 YaSeekerUltra can read browser cookies exported in Netscape `cookies.txt` format.
 
 1. Log in to Yandex in your browser.
-2. Export your Yandex cookies as `cookies.txt`.
+2. Export your Yandex cookies as `cookies.txt`  ([Chrome](https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc), [Firefox](https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/)).
 3. Put `cookies.txt` in the directory where you run YaSeekerUltra.
 4. Run YaSeekerUltra normally.
 
