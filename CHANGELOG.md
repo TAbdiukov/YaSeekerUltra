@@ -4,6 +4,8 @@
 
 - Fetch profile pictures safely and consistently
 - Better cookie handling
+- Update README
+- Sunset pictures/
 
 ## 0.2.1
 
