@@ -1,8 +1,8 @@
 # YaSINT
 
-YaSINT is a command-line OSINT toolkit for discovering publicly available Yandex account information by username, email address, or Yandex public ID.
+YaSINT is a command line OSINT ttolkit for looking up public Yandex account information by username, email address, or Yandex public ID.
 
-It is a substantially updated package based on the original YaSeeker project. YaSINT is now designed to be installed as a Python package and run using the yasint command, while still supporting direct execution from a source checkout.
+It is a greatly updated package based on the original YaSeeker project. YaSINT is now intended to be installed as a Python package and run with a command, although it can still be run directly from a source checkout.
 
 ## Artifacts
 
