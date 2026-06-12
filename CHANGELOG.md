@@ -4,6 +4,7 @@
 
 - High-level tests
 - Fix Unicode issue in file put()
+- Make cookie loading status explicit with colourised output.
 - Update README
 - Update .gitignore
 

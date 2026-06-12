@@ -202,6 +202,7 @@ async def main():
     # convert input to output
     processor = Processor(
         no_progressbar=args.no_progressbar,
+        no_color=args.no_color,
         proxy=args.proxy,
         cookie_file=args.cookie_file,
     )

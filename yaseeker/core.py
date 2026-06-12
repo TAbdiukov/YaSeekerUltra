@@ -10,6 +10,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 from charset_normalizer import from_bytes
 import requests
+import termcolor
 from socid_extractor import extract
 
 import asyncio
@@ -45,6 +46,16 @@ def load_cookies(filename):
 def _safe_filename(value: str) -> str:
     safe = re.sub(r'[^A-Za-z0-9._-]+', '_', str(value)).strip('._')
     return safe or 'item'
+
+
+def _colored_text(value: str, color: str, no_color: bool) -> str:
+    if no_color:
+        return value
+
+    try:
+        return termcolor.colored(value, color, force_color=True)
+    except TypeError:
+        return termcolor.colored(value, color)
 
 
 class SessionRecorder:
@@ -478,12 +489,19 @@ class Processor:
             connector=connector, trust_env=True
         )
         self.no_progressbar = kwargs.get('no_progressbar', False)
+        no_color = kwargs.get('no_color', False)
 
         # yandex setup
         cookie_file = kwargs.get('cookie_file') or COOKIES_FILENAME
         self.cookies = load_cookies(cookie_file)
-        if not self.cookies:
-            print(f'Cookies not found, but are required for some sites. See README to learn how to use cookies.')
+        if self.cookies:
+            cookie_count = len(self.cookies)
+            cookie_word = 'cookie' if cookie_count == 1 else 'cookies'
+            message = f'Cookies loaded from {cookie_file}: {cookie_count} {cookie_word}.'
+            print(_colored_text(message, 'green', no_color))
+        else:
+            message = 'Cookies not found, but are required for some sites. See README to learn how to use cookies.'
+            print(_colored_text(message, 'yellow', no_color))
 
     async def close(self):
         await self.session.close()
