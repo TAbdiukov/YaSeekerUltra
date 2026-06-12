@@ -35,8 +35,13 @@ HTML_BOMS = (
     (codecs.BOM_UTF16_BE, 'utf-16-be'),
     (codecs.BOM_UTF16_LE, 'utf-16-le'),
 )
-AVATAR_URL_RE = re.compile(r'(?:https?:)?//avatars\.mds\.yandex\.net/[^\s"\'<>,]+', re.IGNORECASE)
+AVATAR_URL_RE = re.compile(r'(?:https?:)?//avatars\.mds\.yandex\.net/[^\s"\'<>,;)]+', re.IGNORECASE)
 AVATAR_HINT_RE = re.compile(r'avatar|аватар', re.IGNORECASE)
+AVATAR_URL_IGNORE_PATTERNS = (
+    re.compile(r'/get-realty-content/', re.IGNORECASE),
+    re.compile(r'/get-realty-offers/', re.IGNORECASE),
+    re.compile(r'/islands-[1-9]00(?:[/?#]|$)', re.IGNORECASE),
+)
 AVATAR_URL_ATTRS = {
     'src',
     'srcset',
@@ -80,6 +85,11 @@ def _normalise_http_url(value: str, base_url: str) -> str:
         return ''
 
     return url
+
+
+def _avatar_url_is_ignored(url: str) -> bool:
+    path = urlparse(url).path or ''
+    return any(pattern.search(path) for pattern in AVATAR_URL_IGNORE_PATTERNS)
 
 
 class _AvatarURLParser(HTMLParser):
@@ -166,7 +176,7 @@ class _AvatarURLParser(HTMLParser):
 
     def _add_url(self, value: str):
         url = _normalise_http_url(value, self.base_url)
-        if url:
+        if url and not _avatar_url_is_ignored(url):
             self.urls.append(url)
 
 
@@ -246,6 +256,9 @@ class SessionRecorder:
             self._save_avatar(avatar_url)
 
     def _save_avatar(self, avatar_url: str):
+        if _avatar_url_is_ignored(avatar_url):
+            return
+
         try:
             r = requests.get(avatar_url, headers=HEADERS, timeout=30)
             status_code = getattr(r, 'status_code', 0) or 0
@@ -272,7 +285,7 @@ class SessionRecorder:
 
         for match in AVATAR_URL_RE.finditer(search_text):
             url = _normalise_http_url(match.group(0), base_url)
-            if url:
+            if url and not _avatar_url_is_ignored(url):
                 urls.append(url)
 
         if parse_html:
