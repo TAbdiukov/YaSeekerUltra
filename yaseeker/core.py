@@ -1,3 +1,4 @@
+import codecs
 import json
 import logging
 import os
@@ -7,6 +8,7 @@ from datetime import datetime, timezone
 from http.cookiejar import MozillaCookieJar
 from pathlib import Path
 from urllib.parse import urlparse
+from charset_normalizer import from_bytes
 import requests
 from socid_extractor import extract
 
@@ -23,6 +25,13 @@ HEADERS = {
 COOKIES_FILENAME = 'cookies.txt'
 REPORTS_DIRNAME = 'reports'
 SESSION_TIMESTAMP_FORMAT = '%Y%m%dT%H%M%SZ'
+HTML_BOMS = (
+    (codecs.BOM_UTF32_BE, 'utf-32-be'),
+    (codecs.BOM_UTF32_LE, 'utf-32-le'),
+    (codecs.BOM_UTF8, 'utf-8'),
+    (codecs.BOM_UTF16_BE, 'utf-16-be'),
+    (codecs.BOM_UTF16_LE, 'utf-16-le'),
+)
 
 
 def load_cookies(filename):
@@ -76,11 +85,8 @@ class SessionRecorder:
 
         if self._is_html_response(response):
             filename = self._response_filename(request_method, request_url, 'html')
-            with filename.open('w', encoding='utf-8') as f:
-                f.write('<!--\n')
-                f.write(self._html_comment(header_text))
-                f.write('\n-->\n')
-                f.write(response.text)
+            with filename.open('wb') as f:
+                f.write(self._html_with_header_comment(response.content, header_text))
         else:
             filename = self._response_filename(request_method, request_url, 'raw')
             with filename.open('wb') as f:
@@ -116,6 +122,34 @@ class SessionRecorder:
 
         body_start = response.content[:512].lstrip().lower()
         return body_start.startswith(b'<!doctype html') or body_start.startswith(b'<html')
+
+    @classmethod
+    def _html_with_header_comment(cls, content: bytes, header_text: str) -> bytes:
+        bom, body, encoding = cls._html_content_parts(content)
+        comment = '<!--\n' + cls._html_comment(header_text) + '\n-->\n'
+        return bom + comment.encode(encoding, errors='xmlcharrefreplace') + body
+
+    @classmethod
+    def _html_content_parts(cls, content: bytes):
+        for bom, encoding in HTML_BOMS:
+            if content.startswith(bom):
+                return bom, content[len(bom):], encoding
+
+        return b'', content, cls._detect_html_encoding(content)
+
+    @staticmethod
+    def _detect_html_encoding(content: bytes) -> str:
+        match = from_bytes(content).best()
+        encoding = getattr(match, 'encoding', None)
+        if not encoding:
+            return 'utf-8'
+
+        try:
+            codecs.lookup(encoding)
+        except LookupError:
+            return 'utf-8'
+
+        return encoding
 
     @staticmethod
     def _html_comment(text: str) -> str:

@@ -1,4 +1,5 @@
 socid-extractor>=0.0.8
+charset-normalizer>=2.0.0
 termcolor
 tqdm
 aiohttp-socks>=0.11.0
