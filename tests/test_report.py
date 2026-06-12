@@ -1,7 +1,7 @@
 import csv
 
-from yaseeker.core import OutputData, OutputDataList
-from yaseeker.report import CSVOutput, PlainOutput
+from yasint.core import OutputData, OutputDataList
+from yasint.report import CSVOutput, PlainOutput
 
 
 def test_plain_output_makes_no_leads_explicit(tmp_path):

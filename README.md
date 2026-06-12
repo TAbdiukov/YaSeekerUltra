@@ -1,17 +1,12 @@
-# YaSeekerUltra
+# YaSINT
 
+YaSINT is a command-line OSINT toolkit for discovering publicly available Yandex account information by username, email address, or Yandex public ID.
 
-YaSeekerUltra is a command line OSINT tool for looking up public Yandex account
-information by username, email address, or Yandex public ID.
-
-It is a greatly updated package based on the original YaSeeker project.
-YaSeekerUltra is now intended to be installed as a Python package and
-run with the `yaseeker` command, although it can still be run directly from a
-source checkout.
+It is a substantially updated package based on the original YaSeeker project. YaSINT is now designed to be installed as a Python package and run using the yasint command, while still supporting direct execution from a source checkout.
 
 ## Artifacts
 
-Depending on what public Yandex pages and APIs return, YaSeekerUltra may find:
+Depending on what public Yandex pages and APIs return, YaSINT may find:
 
 * full name;
 * profile photo or other possible avatar URLs;
@@ -32,7 +27,7 @@ Python 3.8 or newer is required.
 Install from PyPI:
 
 ```bash
-python -m pip install yaseeker
+python -m pip install yasint
 ```
 
 If you already downloaded the source code, install it from the project directory:
@@ -41,10 +36,10 @@ If you already downloaded the source code, install it from the project directory
 python -m pip install .
 ```
 
-After installation, the `yaseeker` command should be available:
+After installation, the `yasint` command should be available:
 
 ```bash
-yaseeker --version
+yasint --version
 ```
 
 If you do not want to install the package, you can run it from the source
@@ -52,23 +47,23 @@ directory instead:
 
 ```bash
 python -m pip install -r requirements.txt
-python -m yaseeker login
+python -m yasint login
 ```
 
 ## Usage
 
-Give YaSeekerUltra one or more targets:
+Give YaSINT one or more targets:
 
 ```bash
-yaseeker TARGET
+yasint TARGET
 ```
 
 Examples:
 
 ```bash
-yaseeker login
-yaseeker login@yandex.ru
-yaseeker c48fhxw0qppa50289r5c9ku4k4
+yasint login
+yasint login@yandex.ru
+yasint c48fhxw0qppa50289r5c9ku4k4
 ```
 
 The tool recognises the target type automatically. Email addresses
@@ -77,12 +72,12 @@ are supported. A 26-character value is treated as a Yandex public ID.
 For many targets, put one target per line in a text file:
 
 ```bash
-yaseeker --target-list targets.txt
+yasint --target-list targets.txt
 ```
 
 ## Results
 
-For every target, YaSeekerUltra creates a per-session folder under `reports/`.
+For every target, YaSINT creates a per-session folder under `reports/`.
 The folder name contains a UTC timestamp and the target value.
 
 ```text
@@ -96,7 +91,7 @@ you the human-readable summary.
 You can also write your own report files:
 
 ```bash
-yaseeker login -oT report.txt -oC report.csv
+yasint login -oT report.txt -oC report.csv
 ```
 
 A `No leads found` result means the checked sources did not return useful
@@ -105,20 +100,20 @@ profile data for that target. It does not prove that the account does not exist.
 ## Cookies
 
 Some Yandex services require cookies before they return useful API responses.
-YaSeekerUltra can read browser cookies exported in Netscape `cookies.txt` format.
+YaSINT can read browser cookies exported in Netscape `cookies.txt` format.
 
 1. Log in to Yandex in your browser.
 2. Export your Yandex cookies as `cookies.txt`  ([Chrome](https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc), [Firefox](https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/)).
-3. Put `cookies.txt` in the directory where you run YaSeekerUltra.
-4. Run YaSeekerUltra normally.
+3. Put `cookies.txt` in the directory where you run YaSINT.
+4. Run YaSINT normally.
 
 You can also pass a custom cookie file path:
 
 ```bash
-yaseeker login --cookie-jar-file /path/to/cookies.txt
+yasint login --cookie-jar-file /path/to/cookies.txt
 ```
 
-When cookies are loaded, YaSeekerUltra prints whether any of them match the
+When cookies are loaded, YaSINT prints whether any of them match the
 Yandex domains queried by the tool.
 
 ## SOWEL classification

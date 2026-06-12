@@ -1,7 +1,7 @@
 import asyncio
 from types import SimpleNamespace
 
-import yaseeker.core as core
+import yasint.core as core
 
 
 class FakeProgress:

@@ -1,7 +1,7 @@
 import codecs
 from types import SimpleNamespace
 
-from yaseeker.core import SessionRecorder
+from yasint.core import SessionRecorder
 
 
 def _fake_response(content, text_encoding):
@@ -81,7 +81,7 @@ def test_avatar_ignore_list_skips_realty_urls_and_default_islands_sizes(tmp_path
         downloaded_urls.append(url)
         return _fake_avatar_response(avatar_body, 'image/jpeg')
 
-    monkeypatch.setattr('yaseeker.core.requests.get', fake_get)
+    monkeypatch.setattr('yasint.core.requests.get', fake_get)
 
     body = (
         '<html><head><style>'

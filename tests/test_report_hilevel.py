@@ -1,7 +1,7 @@
 import csv
 
-from yaseeker.core import OutputData, OutputDataList
-from yaseeker.report import CSVOutput, PlainOutput, TXTOutput
+from yasint.core import OutputData, OutputDataList
+from yasint.report import CSVOutput, PlainOutput, TXTOutput
 
 
 def _mixed_report_data(tmp_path):

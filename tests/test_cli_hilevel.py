@@ -4,7 +4,7 @@ import sys
 
 import pytest
 
-import yaseeker.cli as cli
+import yasint.cli as cli
 
 
 PUBLIC_ID = 'c48fhxw0qppa50289r5c9ku4k4'
@@ -60,7 +60,7 @@ def fake_processor(monkeypatch):
 
 
 def test_run_exits_without_targets(monkeypatch, capsys, fake_processor):
-    monkeypatch.setattr(sys, 'argv', ['yaseeker'])
+    monkeypatch.setattr(sys, 'argv', ['yasint'])
 
     with pytest.raises(SystemExit) as exc_info:
         cli.run()
@@ -75,7 +75,7 @@ def test_run_processes_positional_targets_and_closes_processor(monkeypatch, caps
         sys,
         'argv',
         [
-            'yaseeker',
+            'yasint',
             '--no-progressbar',
             '--no-color',
             '--proxy',
@@ -111,7 +111,7 @@ def test_run_processes_positional_targets_and_closes_processor(monkeypatch, caps
 
 
 def test_run_reads_targets_from_stdin(monkeypatch, fake_processor):
-    monkeypatch.setattr(sys, 'argv', ['yaseeker', '--targets-from-stdin', '--silent', '--no-progressbar'])
+    monkeypatch.setattr(sys, 'argv', ['yasint', '--targets-from-stdin', '--silent', '--no-progressbar'])
     monkeypatch.setattr(sys, 'stdin', io.StringIO('alpha\nbeta@yandex.ru\n'))
 
     cli.run()
@@ -134,7 +134,7 @@ def test_run_reads_target_list_and_writes_requested_reports(monkeypatch, capsys,
         sys,
         'argv',
         [
-            'yaseeker',
+            'yasint',
             '--target-list',
             str(target_file),
             '--silent',
@@ -179,7 +179,7 @@ def test_run_writes_auxiliary_reports_for_session_outputs(monkeypatch, capsys, t
         return _lead_results(input_data, session_dir=str(session_dir))
 
     fake_processor.result_builder = session_results
-    monkeypatch.setattr(sys, 'argv', ['yaseeker', '--no-progressbar', '--no-color', 'login'])
+    monkeypatch.setattr(sys, 'argv', ['yasint', '--no-progressbar', '--no-color', 'login'])
 
     cli.run()
 

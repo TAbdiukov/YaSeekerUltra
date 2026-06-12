@@ -2,7 +2,7 @@ import asyncio
 
 import requests
 
-from yaseeker.core import Processor, load_cookies
+from yasint.core import Processor, load_cookies
 
 
 def _write_cookie_file(cookie_file):

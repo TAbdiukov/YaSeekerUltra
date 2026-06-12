@@ -1,8 +1,8 @@
-PROJECT_NAME=yaseeker
-LINT_FILES=yaseeker tests
+PROJECT_NAME=yasint
+LINT_FILES=yasint tests
 
 test:
-	coverage run --source=./yaseeker -m pytest tests
+	coverage run --source=./yasint -m pytest tests
 	coverage report -m
 	coverage html
 
