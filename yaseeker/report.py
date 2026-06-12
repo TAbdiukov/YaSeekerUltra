@@ -1,31 +1,13 @@
 from colorama import init
 import csv
 import termcolor
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
-from .core import OutputData, OutputDataList
+from .core import OutputData, OutputDataList, REQUEST_SPECS
 
 
 # use Colorama to make Termcolor work on Windows too
 init()
-
-# Platform -> (HTTP method, URL template).
-# NOTE: "{value}" will be replaced by the identifier printed in the entry.
-REQUEST_SPECS: Dict[str, Tuple[str, str]] = {
-    "collections api": ("GET",  "https://yandex.ru/collections/api/users/{value}"),
-    "music":           ("GET",  "https://music.yandex.ru/handlers/library.jsx?owner={value}"),
-    "bugbounty":       ("GET",  "https://yandex.ru/bugbounty/researchers/{value}/"),
-    "messenger search":("POST", "https://yandex.ru/messenger/api/registry/api/"),
-    "music api":       ("GET",  "https://api.music.yandex.net/users/{value}"),
-    "reviews":         ("GET",  "https://reviews.yandex.ru/user/{value}"),
-    "znatoki":         ("GET",  "https://yandex.ru/q/profile/{value}/"),
-    "zen":             ("GET",  "https://zen.yandex.ru/user/{value}"),
-    "market":          ("GET",  "https://market.yandex.ru/user/{value}/reviews"),
-    "o":               ("GET",  "http://o.yandex.ru/profile/{value}/"),
-    "kinopoisk":       ("GET",  "https://www.kinopoisk.ru/user/{value}/"),
-    "messenger":       ("POST", "https://yandex.ru/messenger/api/registry/api/"),
-}
-
 
 def _normalize_platform(name: str) -> str:
     # "Collections Api" -> "collections api"
@@ -91,6 +73,12 @@ class PlainOutput(Output):
             session_dir = getattr(o, 'session_dir', '')
             if session_dir:
                 text += f'Reports session: {session_dir}\n'
+
+            avatar_urls = getattr(o, 'avatar_urls', [])
+            if avatar_urls:
+                text += f'Possible avatars found: {len(avatar_urls)}\n'
+                for avatar_url in avatar_urls:
+                    text += f'Possible avatar: {avatar_url}\n'
 
             lead_results = [r for r in o.results if _result_has_returned_data(r)]
             text += f'Leads found: {len(lead_results)}\n'
@@ -190,15 +178,19 @@ class CSVOutput(Output):
 
         fields = list(set(fields))
 
-        fieldnames = ['Target', 'Reports Session', 'Leads Found'] + [k.title().replace('_', ' ') for k in fields]
+        fieldnames = ['Target', 'Reports Session', 'Leads Found', 'Possible Avatars'] + [
+            k.title().replace('_', ' ') for k in fields
+        ]
 
-        with open(self.filename, 'w', encoding="utf-8") as csvfile:
+        with open(self.filename, 'w', encoding="utf-8", newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames, quoting=csv.QUOTE_ALL)
             writer.writeheader()
 
             for o in self.data:
                 i = o.input_data
                 session_dir = getattr(o, 'session_dir', '')
+                avatar_urls = getattr(o, 'avatar_urls', [])
+                possible_avatars = '\n'.join(avatar_urls)
                 lead_results = [r for r in o.results if _result_has_returned_data(r)]
 
                 if not lead_results:
@@ -206,6 +198,7 @@ class CSVOutput(Output):
                         'Target': i,
                         'Reports Session': session_dir,
                         'Leads Found': 'No',
+                        'Possible Avatars': possible_avatars,
                     })
                     continue
 
@@ -214,6 +207,7 @@ class CSVOutput(Output):
                         'Target': i,
                         'Reports Session': session_dir,
                         'Leads Found': 'Yes',
+                        'Possible Avatars': possible_avatars,
                     }
                     for k in fields:
                         key = k.title().replace('_', ' ')

@@ -1,10 +1,14 @@
 # Changelog
 
+## 0.3.0
+
+- Fetch profile pictures
+
 ## 0.2.1
 
 - High-level tests
 - Fix Unicode issue in file put()
-- Make cookie loading status explicit with colourised output.
+- Make relevant cookie loading status explicit with colourised output.
 - Update README
 - Update .gitignore
 

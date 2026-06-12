@@ -16,7 +16,7 @@ import termcolor
 from socid_extractor import extract
 
 import asyncio
-from typing import List, Any
+from typing import Dict, List, Any, Tuple
 
 from aiohttp import TCPConnector, ClientSession
 import tqdm
@@ -35,13 +35,40 @@ HTML_BOMS = (
     (codecs.BOM_UTF16_BE, 'utf-16-be'),
     (codecs.BOM_UTF16_LE, 'utf-16-le'),
 )
+
+# Platform -> (HTTP method, URL template).
+# NOTE: "{value}" will be replaced by the identifier being queried.
+REQUEST_SPECS: Dict[str, Tuple[str, str]] = {
+    "collections api": ("GET",  "https://yandex.ru/collections/api/users/{value}"),
+    "music":           ("GET",  "https://music.yandex.ru/handlers/library.jsx?owner={value}"),
+    "bugbounty":       ("GET",  "https://yandex.ru/bugbounty/researchers/{value}/"),
+    "messenger search":("POST", "https://yandex.ru/messenger/api/registry/api/"),
+    "music api":       ("GET",  "https://api.music.yandex.net/users/{value}"),
+    "reviews":         ("GET",  "https://reviews.yandex.ru/user/{value}"),
+    "znatoki":         ("GET",  "https://yandex.ru/q/profile/{value}/"),
+    "zen":             ("GET",  "https://zen.yandex.ru/user/{value}"),
+    "market":          ("GET",  "https://market.yandex.ru/user/{value}/reviews"),
+    "o":               ("GET",  "http://o.yandex.ru/profile/{value}/"),
+    "kinopoisk":       ("GET",  "https://www.kinopoisk.ru/user/{value}/"),
+    "messenger":       ("POST", "https://yandex.ru/messenger/api/registry/api/"),
+}
+QUERIED_HOSTS = frozenset(
+    parsed.hostname
+    for parsed in (
+        urlparse(template.format(value='__cookie_probe__'))
+        for _, template in REQUEST_SPECS.values()
+    )
+    if parsed.hostname
+)
 AVATAR_URL_RE = re.compile(r'(?:https?:)?//avatars\.mds\.yandex\.net/[^\s"\'<>,;)]+', re.IGNORECASE)
 AVATAR_HINT_RE = re.compile(r'avatar|аватар', re.IGNORECASE)
 AVATAR_URL_IGNORE_PATTERNS = (
     re.compile(r'/get-realty-content/', re.IGNORECASE),
     re.compile(r'/get-realty-offers/', re.IGNORECASE),
-    re.compile(r'/islands-[1-9]00(?:[/?#]|$)', re.IGNORECASE),
-)
+    re.compile(r'/get-verba/', re.IGNORECASE),
+	re.compile(r'/get-vertis-journal/', re.IGNORECASE),
+    re.compile(r'/get-ugc/', re.IGNORECASE),
+	)
 AVATAR_URL_ATTRS = {
     'src',
     'srcset',
@@ -180,6 +207,10 @@ class _AvatarURLParser(HTMLParser):
             self.urls.append(url)
 
 
+def _request_url(platform: str, value: str) -> str:
+    return REQUEST_SPECS[platform][1].format(value=value)
+
+
 def _colored_text(value: str, color: str, no_color: bool) -> str:
     if no_color:
         return value
@@ -188,6 +219,29 @@ def _colored_text(value: str, color: str, no_color: bool) -> str:
         return termcolor.colored(value, color, force_color=True)
     except TypeError:
         return termcolor.colored(value, color)
+
+
+def _cookie_matches_host(cookie, host: str) -> bool:
+    cookie_domain = str(getattr(cookie, 'domain', '')).lower()
+    if not cookie_domain:
+        return False
+
+    host = host.lower()
+    is_domain_cookie = getattr(cookie, 'domain_initial_dot', False) or cookie_domain.startswith('.')
+    cookie_domain = cookie_domain.lstrip('.')
+
+    if is_domain_cookie:
+        return host == cookie_domain or host.endswith(f'.{cookie_domain}')
+
+    return host == cookie_domain
+
+
+def _relevant_cookie_count(cookies) -> int:
+    return sum(
+        1
+        for cookie in cookies
+        if any(_cookie_matches_host(cookie, host) for host in QUERIED_HOSTS)
+    )
 
 
 class SessionRecorder:
@@ -203,7 +257,8 @@ class SessionRecorder:
 
         self.session_dir.mkdir(parents=True)
         self.counter = 0
-        self.avatar_urls = set()
+        self.avatar_urls = []
+        self.avatar_urls_seen = set()
 
     def save_response(self, method: str, url: str, response):
         for r in list(getattr(response, 'history', [])) + [response]:
@@ -249,10 +304,11 @@ class SessionRecorder:
             return
 
         for avatar_url in avatar_urls:
-            if avatar_url in self.avatar_urls:
+            if avatar_url in self.avatar_urls_seen:
                 continue
 
-            self.avatar_urls.add(avatar_url)
+            self.avatar_urls_seen.add(avatar_url)
+            self.avatar_urls.append(avatar_url)
             self._save_avatar(avatar_url)
 
     def _save_avatar(self, avatar_url: str):
@@ -503,7 +559,7 @@ class YaUsername(IdTypeInfoAggregator):
 
     def get_collections_API_info(self) -> dict:
         return self.simple_get_info_request(
-            url=f'https://yandex.ru/collections/api/users/{self.identifier}',
+            url=_request_url('collections api', self.identifier),
             orig_url=f'https://yandex.ru/collections/user/{self.identifier}/'
         )
 
@@ -511,16 +567,16 @@ class YaUsername(IdTypeInfoAggregator):
         orig_url = f'https://music.yandex.ru/users/{self.identifier}/playlists'
         referer = {'referer': orig_url}
         return self.simple_get_info_request(
-            url=f'https://music.yandex.ru/handlers/library.jsx?owner={self.identifier}',
+            url=_request_url('music', self.identifier),
             orig_url=orig_url,
             headers_updates=referer,
         )
 
     def get_bugbounty_info(self) -> dict:
-        return self.simple_get_info_request(f'https://yandex.ru/bugbounty/researchers/{self.identifier}/')
+        return self.simple_get_info_request(_request_url('bugbounty', self.identifier))
 
     def get_messenger_search_info(self) -> dict:
-        url = 'https://yandex.ru/messenger/api/registry/api/'
+        url = _request_url('messenger search', self.identifier)
         data = {"method": "search",
                 "params": {"query": self.identifier, "limit": 10, "entities": ["messages", "users_and_chats"]}}
         r = None
@@ -541,7 +597,7 @@ class YaUsername(IdTypeInfoAggregator):
         return info
 
     def get_music_API_info(self) -> dict:
-        return self.simple_get_info_request(f'https://api.music.yandex.net/users/{self.identifier}')
+        return self.simple_get_info_request(_request_url('music api', self.identifier))
 
 
 class YaPublicUserId(IdTypeInfoAggregator):
@@ -555,27 +611,27 @@ class YaPublicUserId(IdTypeInfoAggregator):
 
     def get_collections_API_info(self) -> dict:
         return self.simple_get_info_request(
-            url=f'https://yandex.ru/collections/api/users/{self.identifier}',
+            url=_request_url('collections api', self.identifier),
             orig_url=f'https://yandex.ru/collections/user/{self.identifier}/'
         )
 
     def get_reviews_info(self) -> dict:
-        return self.simple_get_info_request(f'https://reviews.yandex.ru/user/{self.identifier}')
+        return self.simple_get_info_request(_request_url('reviews', self.identifier))
 
     def get_znatoki_info(self) -> dict:
-        return self.simple_get_info_request(f'https://yandex.ru/q/profile/{self.identifier}/')
+        return self.simple_get_info_request(_request_url('znatoki', self.identifier))
 
     def get_zen_info(self) -> dict:
-        return self.simple_get_info_request(f'https://zen.yandex.ru/user/{self.identifier}')
+        return self.simple_get_info_request(_request_url('zen', self.identifier))
 
     def get_market_info(self) -> dict:
-        return self.simple_get_info_request(f'https://market.yandex.ru/user/{self.identifier}/reviews')
+        return self.simple_get_info_request(_request_url('market', self.identifier))
 
     def get_o_info(self) -> dict:
-        return self.simple_get_info_request(f'http://o.yandex.ru/profile/{self.identifier}/')
+        return self.simple_get_info_request(_request_url('o', self.identifier))
 
     def get_kinopoisk_info(self) -> dict:
-        return self.simple_get_info_request(f'https://www.kinopoisk.ru/user/{self.identifier}/')
+        return self.simple_get_info_request(_request_url('kinopoisk', self.identifier))
 
 
 class YaMessengerGuid(IdTypeInfoAggregator):
@@ -586,7 +642,7 @@ class YaMessengerGuid(IdTypeInfoAggregator):
         return len(identifier) == 36 and '-' in identifier and name in cls.acceptable_fields
 
     def get_messenger_info(self) -> dict:
-        url = 'https://yandex.ru/messenger/api/registry/api/'
+        url = _request_url('messenger', self.identifier)
         data = {"method": "get_users_data", "params": {"guids": [self.identifier]}}
         r = None
         try:
@@ -689,10 +745,17 @@ class OutputData:
 
 
 class OutputDataList:
-    def __init__(self, input_data: InputData, results: List[OutputData], session_dir: str = ''):
+    def __init__(
+        self,
+        input_data: InputData,
+        results: List[OutputData],
+        session_dir: str = '',
+        avatar_urls: List[str] = None,
+    ):
         self.input_data = input_data
         self.results = results
         self.session_dir = session_dir
+        self.avatar_urls = avatar_urls or []
 
     def __repr__(self):
         return f'Target {self.input_data}:\n' + '--------\n'.join(map(str, self.results))
@@ -720,10 +783,14 @@ class Processor:
         cookie_file = kwargs.get('cookie_file') or COOKIES_FILENAME
         self.cookies = load_cookies(cookie_file)
         if self.cookies:
-            cookie_count = len(self.cookies)
-            cookie_word = 'cookie' if cookie_count == 1 else 'cookies'
-            message = f'Cookies loaded from {cookie_file}: {cookie_count} {cookie_word}.'
-            print(_colored_text(message, 'green', no_color))
+            cookie_count = _relevant_cookie_count(self.cookies)
+            if cookie_count:
+                cookie_word = 'cookie' if cookie_count == 1 else 'cookies'
+                message = f'Cookies loaded from {cookie_file} for queried domains: {cookie_count} {cookie_word}.'
+                print(_colored_text(message, 'green', no_color))
+            else:
+                message = f'Cookies loaded from {cookie_file}, but none match queried domains.'
+                print(_colored_text(message, 'yellow', no_color))
         else:
             message = 'Cookies not found, but are required for some sites. See README to learn how to use cookies.'
             print(_colored_text(message, 'yellow', no_color))
@@ -776,6 +843,7 @@ class Processor:
             input_data,
             data,
             session_dir=str(session_recorder.session_dir.resolve()),
+            avatar_urls=list(getattr(session_recorder, 'avatar_urls', [])),
         )
 
         return results

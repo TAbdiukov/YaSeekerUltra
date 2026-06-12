@@ -51,7 +51,7 @@ def test_processor_reports_loaded_cookies_in_colour(tmp_path, capsys):
 
     output = _processor_cookie_output(cookie_file, no_color=False, capsys=capsys)
 
-    assert f'Cookies loaded from {cookie_file}: 1 cookie.' in output
+    assert f'Cookies loaded from {cookie_file} for queried domains: 1 cookie.' in output
     assert '\x1b[' in output
 
 
@@ -61,4 +61,17 @@ def test_processor_loaded_cookie_message_respects_no_color(tmp_path, capsys):
 
     output = _processor_cookie_output(cookie_file, no_color=True, capsys=capsys)
 
-    assert output == f'Cookies loaded from {cookie_file}: 1 cookie.\n'
+    assert output == f'Cookies loaded from {cookie_file} for queried domains: 1 cookie.\n'
+
+
+def test_processor_reports_when_loaded_cookies_do_not_match_queried_domains(tmp_path, capsys):
+    cookie_file = tmp_path / 'cookies.txt'
+    cookie_file.write_text(
+        '# Netscape HTTP Cookie File\n'
+        'example.com\tFALSE\t/\tFALSE\t2147483647\texample_cookie\t2\n',
+        encoding='utf-8',
+    )
+
+    output = _processor_cookie_output(cookie_file, no_color=True, capsys=capsys)
+
+    assert output == f'Cookies loaded from {cookie_file}, but none match queried domains.\n'
