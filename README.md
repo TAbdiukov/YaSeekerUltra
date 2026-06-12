@@ -1,4 +1,4 @@
-# YaSeeker
+# YaSeekerUltra
 
 <p align="center">
   <img src="./pictures/logo.jpg" />
@@ -6,7 +6,7 @@
 
 ## Description
 
-YaSeeker - an OSINT tool to get info about any Yandex account using email or login.
+YaSeekerUltra - an OSINT tool to get info about any Yandex account using email or login.
 
 It can find:
 - Fullname
@@ -96,8 +96,8 @@ This tool uses the following OSINT techniques:
 
 ## Cookies
 
-Some services are required cookies for API requests. Follow next steps to use your cookies for YaSeeker:
+Some services are required cookies for API requests. Follow next steps to use your cookies for YaSeekerUltra:
 1. Login into Yandex through your browser.
 1. Install any extension to download all the Ya cookies in Netscape format aka cookies.txt  ([Chrome](https://chrome.google.com/webstore/detail/get-cookiestxt/bgaddhkoddajcdgocldbbfleckgcbcid), [Firefox](https://addons.mozilla.org/en-US/firefox/addon/cookies-txt/)).
-1. Save it to the directory of YaSeeker in file `cookies.txt`.
+1. Save it to the directory of YaSeekerUltra in file `cookies.txt`.
 1. Run script and enjoy!

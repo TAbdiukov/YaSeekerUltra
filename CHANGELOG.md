@@ -3,6 +3,8 @@
 ## 0.2.1
 
 - High-level tests
+- Fix Unicode issue in file put()
+- Update .gitignore
 
 ## 0.2.0
 
