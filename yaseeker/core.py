@@ -1,4 +1,6 @@
 import codecs
+from html import unescape
+from html.parser import HTMLParser
 import json
 import logging
 import os
@@ -7,7 +9,7 @@ import sys
 from datetime import datetime, timezone
 from http.cookiejar import MozillaCookieJar
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 from charset_normalizer import from_bytes
 import requests
 import termcolor
@@ -33,6 +35,25 @@ HTML_BOMS = (
     (codecs.BOM_UTF16_BE, 'utf-16-be'),
     (codecs.BOM_UTF16_LE, 'utf-16-le'),
 )
+AVATAR_URL_RE = re.compile(r'(?:https?:)?//avatars\.mds\.yandex\.net/[^\s"\'<>,]+', re.IGNORECASE)
+AVATAR_HINT_RE = re.compile(r'avatar|аватар', re.IGNORECASE)
+AVATAR_URL_ATTRS = {
+    'src',
+    'srcset',
+    'data-src',
+    'data-srcset',
+    'data-original',
+    'data-lazy-src',
+}
+AVATAR_CONTENT_TYPE_EXTENSIONS = {
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/png': 'png',
+    'image/gif': 'gif',
+    'image/webp': 'webp',
+    'image/svg+xml': 'svg',
+}
+AVATAR_IMAGE_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'}
 
 
 def load_cookies(filename):
@@ -46,6 +67,107 @@ def load_cookies(filename):
 def _safe_filename(value: str) -> str:
     safe = re.sub(r'[^A-Za-z0-9._-]+', '_', str(value)).strip('._')
     return safe or 'item'
+
+
+def _normalise_http_url(value: str, base_url: str) -> str:
+    value = unescape(str(value or '')).strip()
+    if not value:
+        return ''
+
+    url = urljoin(base_url, value)
+    parsed = urlparse(url)
+    if parsed.scheme not in ('http', 'https') or not parsed.netloc:
+        return ''
+
+    return url
+
+
+class _AvatarURLParser(HTMLParser):
+    VOID_TAGS = {
+        'area',
+        'base',
+        'br',
+        'col',
+        'embed',
+        'hr',
+        'img',
+        'input',
+        'link',
+        'meta',
+        'param',
+        'source',
+        'track',
+        'wbr',
+    }
+    AVATAR_TAGS = {'img', 'source'}
+
+    def __init__(self, base_url: str):
+        super().__init__(convert_charrefs=True)
+        self.base_url = base_url
+        self.urls = []
+        self._context = []
+
+    def handle_starttag(self, tag, attrs):
+        self._handle_tag(tag, attrs, push=True)
+
+    def handle_startendtag(self, tag, attrs):
+        self._handle_tag(tag, attrs, push=False)
+
+    def handle_endtag(self, tag):
+        tag = tag.lower()
+        for index in range(len(self._context) - 1, -1, -1):
+            if self._context[index][0] == tag:
+                del self._context[index:]
+                break
+
+    def _handle_tag(self, tag, attrs, push: bool):
+        tag = tag.lower()
+        attrs_dict = {str(k).lower(): str(v or '') for k, v in attrs}
+        attr_text = ' '.join([tag] + list(attrs_dict.keys()) + list(attrs_dict.values()))
+        in_avatar_context = bool(AVATAR_HINT_RE.search(attr_text)) or any(
+            context for _, context in self._context
+        )
+
+        self._add_yandex_avatar_urls(attrs_dict.values())
+
+        if in_avatar_context and tag in self.AVATAR_TAGS:
+            self._add_candidate_urls(attrs_dict)
+
+        if push and tag not in self.VOID_TAGS:
+            self._context.append((tag, in_avatar_context))
+
+    def _add_yandex_avatar_urls(self, values):
+        for value in values:
+            text = unescape(str(value or ''))
+            for match in AVATAR_URL_RE.finditer(text):
+                self._add_url(match.group(0))
+
+    def _add_candidate_urls(self, attrs_dict):
+        for name, value in attrs_dict.items():
+            if name not in AVATAR_URL_ATTRS:
+                continue
+
+            for candidate in self._split_url_attribute(value):
+                self._add_url(candidate)
+
+    @staticmethod
+    def _split_url_attribute(value: str):
+        text = unescape(str(value or '')).strip()
+        if not text:
+            return []
+
+        candidates = []
+        for part in text.split(','):
+            tokens = part.strip().split()
+            if tokens:
+                candidates.append(tokens[0])
+
+        return candidates
+
+    def _add_url(self, value: str):
+        url = _normalise_http_url(value, self.base_url)
+        if url:
+            self.urls.append(url)
 
 
 def _colored_text(value: str, color: str, no_color: bool) -> str:
@@ -71,6 +193,7 @@ class SessionRecorder:
 
         self.session_dir.mkdir(parents=True)
         self.counter = 0
+        self.avatar_urls = set()
 
     def save_response(self, method: str, url: str, response):
         for r in list(getattr(response, 'history', [])) + [response]:
@@ -93,8 +216,9 @@ class SessionRecorder:
         request_method = getattr(request, 'method', None) or method
         request_url = getattr(request, 'url', None) or getattr(response, 'url', None) or url
         header_text = self._response_header_text(request_method, request_url, response)
+        is_html = self._is_html_response(response)
 
-        if self._is_html_response(response):
+        if is_html:
             filename = self._response_filename(request_method, request_url, 'html')
             with filename.open('wb') as f:
                 f.write(self._html_with_header_comment(response.content, header_text))
@@ -104,6 +228,94 @@ class SessionRecorder:
                 f.write(header_text.encode('utf-8', errors='replace'))
                 f.write(b'\n\n')
                 f.write(response.content)
+
+        self._save_avatars_from_content(request_url, response.content, parse_html=is_html)
+
+    def _save_avatars_from_content(self, base_url: str, content: bytes, parse_html: bool = False):
+        try:
+            avatar_urls = self._avatar_urls_from_content(content, base_url, parse_html=parse_html)
+        except Exception as e:
+            print(f'Error while detecting avatars for URL {base_url}: {e}\n')
+            return
+
+        for avatar_url in avatar_urls:
+            if avatar_url in self.avatar_urls:
+                continue
+
+            self.avatar_urls.add(avatar_url)
+            self._save_avatar(avatar_url)
+
+    def _save_avatar(self, avatar_url: str):
+        try:
+            r = requests.get(avatar_url, headers=HEADERS, timeout=30)
+            status_code = getattr(r, 'status_code', 0) or 0
+            if status_code >= 400:
+                reason = getattr(r, 'reason', '')
+                raise requests.HTTPError(f'{status_code} {reason}'.rstrip())
+
+            filename = self._response_filename('GET', avatar_url, self._avatar_file_suffix(r, avatar_url))
+            body = getattr(r, 'content', b'') or b''
+            if isinstance(body, str):
+                body = body.encode('utf-8')
+
+            with filename.open('wb') as f:
+                f.write(body)
+        except Exception as e:
+            self.save_request_error('GET', avatar_url, e)
+            print(f'Error while saving avatar for URL {avatar_url}: {e}\n')
+
+    @classmethod
+    def _avatar_urls_from_content(cls, content: bytes, base_url: str, parse_html: bool = False):
+        text = cls._content_text(content)
+        search_text = text.replace('\\/', '/')
+        urls = []
+
+        for match in AVATAR_URL_RE.finditer(search_text):
+            url = _normalise_http_url(match.group(0), base_url)
+            if url:
+                urls.append(url)
+
+        if parse_html:
+            parser = _AvatarURLParser(base_url)
+            try:
+                parser.feed(text)
+            except Exception:
+                pass
+            urls.extend(parser.urls)
+
+        return cls._unique_urls(urls)
+
+    @classmethod
+    def _content_text(cls, content: bytes) -> str:
+        bom, body, encoding = cls._html_content_parts(content)
+        return (bom + body).decode(encoding, errors='replace')
+
+    @staticmethod
+    def _unique_urls(urls):
+        unique = []
+        seen = set()
+
+        for url in urls:
+            if url in seen:
+                continue
+
+            seen.add(url)
+            unique.append(url)
+
+        return unique
+
+    @staticmethod
+    def _avatar_file_suffix(response, avatar_url: str) -> str:
+        headers = getattr(response, 'headers', {}) or {}
+        content_type = headers.get('Content-Type', '').split(';', 1)[0].strip().lower()
+        extension = AVATAR_CONTENT_TYPE_EXTENSIONS.get(content_type)
+
+        if not extension:
+            path_extension = Path(urlparse(avatar_url).path).suffix.lower().lstrip('.')
+            if path_extension in AVATAR_IMAGE_EXTENSIONS:
+                extension = path_extension
+
+        return f'avatar.{extension or "raw"}'
 
     def _response_filename(self, method: str, url: str, suffix: str) -> Path:
         self.counter += 1
